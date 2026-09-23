@@ -1,0 +1,14 @@
+00_INBOX/
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.streamlit/
+.DS_Store
+delivery/
+internal/
+*.db
+*.sqlite
