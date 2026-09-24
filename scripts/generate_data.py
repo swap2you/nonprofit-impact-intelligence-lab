@@ -43,12 +43,13 @@ def gen():
    rid+=1
  for name,rows in [('fact_enrollment',enroll),('fact_program_outcomes',outcomes),('fact_site_progress',progress),('fact_data_submission',subs)]: conn.execute(metadata.tables[name].insert(),rows)
  funds=[]
- for i in range(1,97): funds.append(dict(record_id=i,funding_source_id=((i-1)%12)+1,program_id=((i-1)%6)+1,site_id=((i-1)%240)+1,amount=round(rng.uniform(10000,95000),2),allocation_status='linked' if i%13 else 'incomplete'))
+ for i in range(1,98): funds.append(dict(record_id=i,funding_source_id=((i-1)%12)+1,program_id=((i-1)%6)+1,site_id=((i-1)%240)+1 if i <= 96 else 999,amount=round(rng.uniform(10000,95000),2),allocation_status='linked' if i%13 else 'incomplete'))
  conn.execute(metadata.tables['fact_funding_allocation'].insert(),funds)
+ issues.append(dict(issue_id=len(issues)+1,table_name='fact_funding_allocation',record_id=97,dimension='referential_integrity',issue_type='orphan_site_reference',severity='High',description='Funding allocation references site_id 999, absent from dim_site; inspect source record 97.',detected_at=now))
  for i in range(1,25): conn.execute(metadata.tables['fact_data_refresh'].insert(),dict(refresh_id=i,table_name='fact_enrollment',refreshed_at=now-timedelta(hours=i),row_count=len(enroll)))
  for i in range(1,13): conn.execute(metadata.tables['fact_ad_hoc_request'].insert(),dict(request_id=i,request_type='funding_lookup' if i%2 else 'quality_extract',requested_at=now-timedelta(days=i),status='complete'))
  mig=[]
- for i in range(1,121): mig.append(dict(reconciliation_id=i,entity_type='site',source_key=f"SRC-{i:03d}",target_key=f"SITE-{((i-1)%48)+1:03d}",match_status='matched' if i%9==0 else ('mismatch' if i%3==0 else 'rejected'),difference_reason='' if i%9==0 else 'Code or measure differs'))
+ for i in range(1,121): mig.append(dict(reconciliation_id=i,entity_type='site',source_key=f"SRC-{i:03d}",target_key=f"SITE-{((i-1)%240)+1:03d}",match_status='matched' if i%9==0 else ('mismatch' if i%3==0 else 'rejected'),difference_reason='' if i%9==0 else 'Code or measure differs'))
  conn.execute(metadata.tables['fact_migration_reconciliation'].insert(),mig)
  conn.execute(metadata.tables['fact_data_quality_issue'].insert(),issues)
  trans.commit(); conn.close()

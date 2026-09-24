@@ -4,7 +4,7 @@
 - Period-over-period: `(current-prior)/prior`, guarded for zero denominators.
 - Anomaly detection: IQR fences on monthly site metrics.
 - Missingness: submission completeness by period.
-- Forecast: linear trend on the last six observations with a wide uncertainty band; only shown when at least four points exist.
-- Diagnostics: rule-based associations such as metric drop + stale submissions = likely reporting delay, spike + duplicates = likely data-quality issue, and sustained movement + healthy quality = operational signal requiring review.
+- Forecast: if at least four period observations exist, fit ordinary least squares to the last six period means (or fewer when only four or five exist), project one period ahead, and report a non-negative estimate plus a bounded interval using 1.96 residual standard deviations with a 5% minimum margin. This is an illustrative diagnostic forecast, not a causal model, commitment, or guarantee; API `/analytics` and the dashboard expose the estimate and bounds.
+- Diagnostics: rule-based associations such as metric drop + stale submissions = possible reporting delay, spike + duplicates = possible data-quality issue, and sustained movement + healthy quality = operational signal requiring review.
 
 These are diagnostic indicators, not causal claims.

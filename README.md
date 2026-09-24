@@ -13,6 +13,7 @@ An independent, synthetic demonstration of nonprofit impact-data quality, report
 | Streamlit dashboard (7 pages) | Implemented |
 | Data-quality dimensions and issue drill-down | Implemented |
 | Trend, IQR anomaly, diagnostic indicators | Implemented |
+| Bounded illustrative forecast with uncertainty band | Implemented |
 | PDF/CSV/XLSX reports | Implemented |
 | PostgreSQL Docker environment | Implemented; SQLite fallback is default |
 | Teams/Slack/WhatsApp/Telegram/Discord | Planned / Extensible; not connected |
@@ -23,7 +24,7 @@ An independent, synthetic demonstration of nonprofit impact-data quality, report
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 pip install -r requirements.txt
-# PostgreSQL-backed validation (Docker Desktop required)
+# PostgreSQL is bound to localhost only. Trust authentication is for this isolated local demo and ephemeral CI service; it is not production configuration.
 docker compose up -d
 $env:DATABASE_URL='postgresql+psycopg2://impact@localhost:5432/impact_lab'
 python scripts/generate_data.py
@@ -50,11 +51,30 @@ flowchart LR
 
 ## Dashboard gallery
 
-Screenshots are in `assets/screenshots/` and are generated from the running app.
+Screenshots are generated from the running app and show the main portfolio workflows.
+
+| Executive Impact Overview | Data Quality Command Center |
+|---|---|
+| ![Executive Impact Overview](assets/screenshots/executive-impact-overview.png) | ![Data Quality Command Center](assets/screenshots/data-quality-command-center.png) |
+
+| Donor / Funding Lookup | Analytics & Early Warning |
+|---|---|
+| ![Donor / Funding Lookup](assets/screenshots/donor---funding-lookup.png) | ![Analytics & Early Warning](assets/screenshots/analytics-and-early-warning.png) |
+
+| Migration & Reconciliation |
+|---|
+| ![Migration & Reconciliation](assets/screenshots/migration-and-reconciliation.png) |
+
+## What this demonstrates
+
+- Nonprofit technology leaders: a practical path from fragmented reporting to an auditable operating view.
+- Data and analytics leaders: deterministic quality rules, transparent diagnostics, bounded forecasting, and PostgreSQL-ready workflows.
+- Consulting buyers: a concrete demonstration of discovery, migration reconciliation, donor/funding lookup, and exportable evidence.
+- Hiring managers: end-to-end delivery across data modeling, Python APIs, dashboards, testing, and public repository safety.
 
 ## Data and methods
 
-Eight fictional countries, six programs, 48 sites, 24 monthly periods, synthetic funding sources, and deliberately injected defects are generated deterministically. See [DATA_MODEL.md](DATA_MODEL.md), [DATA_QUALITY_RULES.md](DATA_QUALITY_RULES.md), and [ANALYTICS_METHODS.md](ANALYTICS_METHODS.md).
+Eight fictional countries, six programs, 240 sites, 24 monthly periods, synthetic funding sources, and deliberately injected defects are generated deterministically. See [DATA_MODEL.md](DATA_MODEL.md), [DATA_QUALITY_RULES.md](DATA_QUALITY_RULES.md), and [ANALYTICS_METHODS.md](ANALYTICS_METHODS.md).
 
 Analytics are diagnostic indicators, not causal conclusions. Forecasts are intentionally bounded and should not be treated as commitments.
 

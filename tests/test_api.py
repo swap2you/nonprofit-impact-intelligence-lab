@@ -13,3 +13,8 @@ def test_migration_reports_all_statuses():
     assert {'matched','mismatch','rejected'} <= statuses
     assert payload['total_rows']==120
     assert payload['readiness_score']==10.8
+
+def test_analytics_exposes_bounded_forecast():
+    forecast=client.get('/analytics').json()['forecast']
+    assert forecast['available'] is True
+    assert forecast['lower_bound'] <= forecast['estimate'] <= forecast['upper_bound']
