@@ -29,7 +29,10 @@ def lookup(country=None,program_id=None):
 def analytics():
  t=trend(q('select period_id,enrolled from fact_enrollment')); ch=float(t['pct_change'].iloc[-1]) if len(t) else 0.0; stale=float(q('select avg(cast(is_stale as integer)) x from fact_data_submission').iloc[0,0]); rows=[{'period_id':int(r.period_id),'enrolled':float(r.enrolled),'rolling_3':float(r.rolling_3),'pct_change':float(r.pct_change)} for r in t.itertuples()]; return {'trend':rows,'diagnostic':diagnostic(ch,stale,.03),'stale_rate':stale}
 @app.get('/migration')
-def migration(): return q('select match_status,count(*) as rows from fact_migration_reconciliation group by match_status').to_dict('records')
+def migration():
+ rows=q('select match_status,count(*) as rows from fact_migration_reconciliation group by match_status').to_dict('records')
+ counts={row['match_status']:int(row['rows']) for row in rows}; total=sum(counts.values())
+ return {'counts':rows,'matched_rows':counts.get('matched',0),'mismatched_rows':counts.get('mismatch',0),'rejected_rows':counts.get('rejected',0),'total_rows':total,'readiness_score':round(counts.get('matched',0)/max(total,1)*100,1)}
 @app.get('/export/{kind}.csv')
 def export_csv(kind):
  sql={'quality':'select * from fact_data_quality_issue','migration':'select * from fact_migration_reconciliation'}.get(kind,'select * from fact_enrollment'); b=io.BytesIO(); b.write(q(sql).to_csv(index=False).encode()); b.seek(0); return StreamingResponse(b,media_type='text/csv',headers={'Content-Disposition':'attachment; filename='+kind+'.csv'})

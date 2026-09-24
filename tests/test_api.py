@@ -8,5 +8,8 @@ def test_lookup_supports_postgresql_parameters():
     assert response.status_code==200
     assert response.json()
 def test_migration_reports_all_statuses():
-    statuses={row['match_status'] for row in client.get('/migration').json()}
+    payload=client.get('/migration').json()
+    statuses={row['match_status'] for row in payload['counts']}
     assert {'matched','mismatch','rejected'} <= statuses
+    assert payload['total_rows']==120
+    assert payload['readiness_score']==10.8
