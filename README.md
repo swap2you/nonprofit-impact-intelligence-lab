@@ -25,7 +25,7 @@ python -m venv .venv
 pip install -r requirements.txt
 # PostgreSQL-backed validation (Docker Desktop required)
 docker compose up -d
-$env:DATABASE_URL='postgresql+psycopg2://impact:impact_demo_only@localhost:5432/impact_lab'
+$env:DATABASE_URL='postgresql+psycopg2://impact@localhost:5432/impact_lab'
 python scripts/generate_data.py
 python -m pytest -q
 uvicorn api.main:app --reload
