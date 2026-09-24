@@ -1,29 +1,40 @@
-import streamlit as st, pandas as pd, plotly.express as px, sys
+import sys
 from pathlib import Path
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from database.schema import engine
-from sqlalchemy import text
-from analytics.methods import trend,bounded_forecast
-st.set_page_config(page_title='Impact Intelligence Lab',page_icon='◎',layout='wide')
-st.sidebar.markdown('## Impact Intelligence Lab')
-st.sidebar.warning('SYNTHETIC DATA ONLY\nIndependent demonstration; not affiliated with or endorsed by buildOn.')
-page=st.sidebar.radio('Dashboard area',['Executive Impact Overview','Data Quality Command Center','Donor / Funding Lookup','Country / Program Operations','Migration & Reconciliation','Analytics & Early Warning','Ad-Hoc Query & Export'])
-def q(sql,params=None): return pd.read_sql_query(text(sql),engine,params=params)
-st.caption('Last refreshed: '+pd.Timestamp.utcnow().strftime('%Y-%m-%d %H:%M UTC'))
-if page=='Executive Impact Overview':
- st.title('Executive Impact Overview'); e=q('select * from fact_enrollment'); i=q('select * from fact_data_quality_issue'); a,b,c,d=st.columns(4); a.metric('Enrollment records',f'{len(e):,}'); b.metric('Enrolled participants',f'{e.enrolled.sum():,}'); c.metric('Quality issues',f'{len(i):,}'); d.metric('Latest period',q('select max(period_label) x from dim_reporting_period').iloc[0,0]); t=trend(e); st.plotly_chart(px.line(t,x='period_id',y='rolling_3',markers=True,title='3-period rolling enrollment trend'),use_container_width=True); st.info('Diagnostic indicator only: review movement alongside freshness and issue rates; no causal claim is made.')
-elif page=='Data Quality Command Center':
- st.title('Data Quality Command Center'); i=q('select * from fact_data_quality_issue'); st.metric('Quality score',f'{max(0,100-len(i)/5760*100):.1f}%'); ref=i[i.dimension=='referential_integrity']; st.metric('Referential-integrity issues',len(ref)); st.dataframe(i.groupby(['dimension','severity','issue_type']).size().reset_index(name='count'),use_container_width=True); st.dataframe(i.head(100),use_container_width=True)
-elif page=='Donor / Funding Lookup':
- st.title('Donor / Funding Program Lookup'); countries=q('select country_code,country_name from dim_country'); programs=q('select program_id,program_name from dim_program'); cc=st.selectbox('Country',['All']+countries.country_code.tolist()); pp=st.selectbox('Program',['All']+programs.program_id.astype(str).tolist()); sql='select c.country_name,p.program_name,sum(e.enrolled) enrolled,avg(o.completion_rate) completion_rate,sum(case when sub.is_stale then 1 else 0 end) stale from fact_enrollment e join dim_site s on s.site_id=e.site_id join dim_country c on c.country_code=s.country_code join dim_program p on p.program_id=s.program_id join fact_program_outcomes o on o.record_id=e.record_id join fact_data_submission sub on sub.record_id=e.record_id where 1=1'; params={}; sql += '' if cc=='All' else ' and c.country_code=:country'; params['country']=cc if cc!='All' else None; sql += '' if pp=='All' else ' and p.program_id=:program_id'; params['program_id']=int(pp) if pp!='All' else None; params={k:v for k,v in params.items() if v is not None}; out=q(sql+' group by c.country_name,p.program_name',params); st.dataframe(out,use_container_width=True); st.download_button('Download lookup CSV',out.to_csv(index=False),'funding_lookup.csv')
-elif page=='Country / Program Operations':
- st.title('Country / Program Operations'); x=q('select c.country_name,p.program_name,sum(e.enrolled) enrolled,avg(case when sub.is_complete then 1.0 else 0.0 end) completeness from fact_enrollment e join dim_site s on s.site_id=e.site_id join dim_country c on c.country_code=s.country_code join dim_program p on p.program_id=s.program_id join fact_data_submission sub on sub.record_id=e.record_id group by c.country_name,p.program_name'); st.dataframe(x,use_container_width=True); st.plotly_chart(px.bar(x,x='country_name',y='enrolled',color='program_name',title='Enrollment by country and program'),use_container_width=True)
-elif page=='Migration & Reconciliation':
- st.title('Migration & Reconciliation'); x=q('select match_status,count(*) rows from fact_migration_reconciliation group by match_status'); total=x['rows'].sum(); matched=x.loc[x.match_status=='matched','rows'].sum(); st.metric('Migration readiness score',f'{matched/max(total,1)*100:.1f}%'); st.plotly_chart(px.pie(x,names='match_status',values='rows',title='Migration readiness'),use_container_width=True); st.dataframe(q("select * from fact_migration_reconciliation where match_status<>'matched'"),use_container_width=True)
-elif page=='Analytics & Early Warning':
- st.title('Analytics & Early Warning'); e=q('select period_id,enrolled from fact_enrollment'); t=trend(e); st.plotly_chart(px.line(t,x='period_id',y=['enrolled','rolling_3'],title='Trend and rolling average'),use_container_width=True); fc=bounded_forecast(e); st.subheader('Illustrative one-period forecast'); st.caption(fc.get('label','Forecast unavailable')); st.metric('Forecast estimate',f"{fc['estimate']:,.0f}" if fc.get('available') else 'Unavailable');
- if fc.get('available'): st.write(f"Period {fc['forecast_period_id']}: {fc['lower_bound']:,.0f}–{fc['upper_bound']:,.0f} bounded uncertainty band from {fc['observations']} recent observations.")
- st.warning('Diagnostic indicator: sustained movement and forecast output require analyst review; they are not causal claims or commitments.'); st.dataframe(t.tail(10),use_container_width=True)
-else:
- st.title('Ad-Hoc Query & Export'); st.write('Safe preset exports for analyst workflows; arbitrary SQL is intentionally not exposed.');
- for kind,sql in [('enrollment','select * from fact_enrollment'),('quality','select * from fact_data_quality_issue'),('migration','select * from fact_migration_reconciliation')]: st.download_button(f'Download {kind} CSV',q(sql).to_csv(index=False),f'{kind}.csv')
+
+import streamlit as st
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from app.queries import backend_name, data_health, quality_score, table
+from app.ui import latest_refresh, sidebar_help, status_header
+
+st.set_page_config(
+    page_title="Nonprofit Impact Intelligence Lab",
+    page_icon=":material/insights:",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+
+pages = st.navigation(
+    [
+        st.Page(ROOT / "app" / "pages" / "executive.py", title="Executive Impact Overview", icon=":material/dashboard:", default=True),
+        st.Page(ROOT / "app" / "pages" / "quality.py", title="Data Quality Command Center", icon=":material/fact_check:"),
+        st.Page(ROOT / "app" / "pages" / "funding.py", title="Donor / Funding Lookup", icon=":material/volunteer_activism:"),
+        st.Page(ROOT / "app" / "pages" / "operations.py", title="Country / Program Operations", icon=":material/public:"),
+        st.Page(ROOT / "app" / "pages" / "migration.py", title="Migration & Reconciliation", icon=":material/sync_alt:"),
+        st.Page(ROOT / "app" / "pages" / "analytics.py", title="Analytics & Early Warning", icon=":material/monitoring:"),
+        st.Page(ROOT / "app" / "pages" / "exports.py", title="Ad-Hoc Query & Export", icon=":material/download:"),
+    ],
+    position="sidebar",
+)
+
+with st.sidebar:
+    sidebar_help()
+
+issues = table("fact_data_quality_issue")
+submissions = table("fact_data_submission")
+score = quality_score(len(issues), len(submissions))
+stale_rate = float(submissions["is_stale"].mean()) if len(submissions) else 0.0
+status_header(backend_name(), data_health(score, stale_rate), latest_refresh(table("fact_data_refresh")))
+pages.run()

@@ -1,0 +1,39 @@
+[theme]
+base = "dark"
+primaryColor = "#8b7cf7"
+backgroundColor = "#101820"
+secondaryBackgroundColor = "#1b2636"
+textColor = "#e7eef8"
+linkColor = "#9ec1ff"
+borderColor = "#314158"
+codeTextColor = "#e7eef8"
+codeBackgroundColor = "#1b2636"
+redColor = "#e06c75"
+orangeColor = "#e0a045"
+yellowColor = "#e0a045"
+greenColor = "#3dbe8c"
+blueColor = "#6aa8ff"
+violetColor = "#8b7cf7"
+grayColor = "#9aabc0"
+baseFontSize = 16
+chartCategoricalColors = ["#8b7cf7", "#6aa8ff", "#3dbe8c", "#e0a045", "#e06c75", "#9aabc0", "#c4b5fd"]
+chartSequentialColors = ["#101820", "#1b2636", "#24344a", "#314158", "#3d5270", "#6aa8ff", "#8b7cf7", "#a78bfa", "#c4b5fd", "#e7eef8"]
+dataframeBorderColor = "#314158"
+dataframeHeaderBackgroundColor = "#1b2636"
+showSidebarBorder = true
+
+[theme.sidebar]
+backgroundColor = "#0d1520"
+secondaryBackgroundColor = "#172233"
+borderColor = "#314158"
+
+[server]
+address = "127.0.0.1"
+port = 8501
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
