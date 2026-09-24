@@ -3,10 +3,32 @@ on: [push,pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: impact_lab
+          POSTGRES_USER: impact
+          POSTGRES_PASSWORD: impact_demo_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U impact -d impact_lab"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
       - run: pip install -r requirements.txt
-      - run: python scripts/generate_data.py
-      - run: python -m pytest -q
+      - name: Test SQLite compatibility
+        run: |
+          python scripts/generate_data.py
+          python -m pytest -q
+      - name: Test PostgreSQL integration
+        env:
+          DATABASE_URL: postgresql+psycopg2://impact:impact_demo_only@localhost:5432/impact_lab
+        run: |
+          python scripts/generate_data.py
+          python -m pytest -q
