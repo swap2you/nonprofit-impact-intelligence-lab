@@ -23,7 +23,11 @@ An independent, synthetic demonstration of nonprofit impact-data quality, report
 python -m venv .venv
 .venv\Scripts\activate  # Windows
 pip install -r requirements.txt
+# PostgreSQL-backed validation (Docker Desktop required)
+docker compose up -d
+$env:DATABASE_URL='postgresql+psycopg2://impact:impact_demo_only@localhost:5432/impact_lab'
 python scripts/generate_data.py
+python -m pytest -q
 uvicorn api.main:app --reload
 # in another terminal
 streamlit run app/dashboard.py
@@ -31,7 +35,7 @@ streamlit run app/dashboard.py
 
 API: http://localhost:8000/docs  | Dashboard: http://localhost:8501
 
-Optional PostgreSQL: `docker compose up -d`, then set `DATABASE_URL` to a PostgreSQL URL. The demo's generator uses portable SQL and SQLite fallback.
+SQLite remains available for zero-config development by omitting `DATABASE_URL`; final validation exercises PostgreSQL through the Compose stack.
 
 ## Architecture
 

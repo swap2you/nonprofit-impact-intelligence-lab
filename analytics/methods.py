@@ -5,7 +5,7 @@ def iqr_flags(values):
 def trend(df,value='enrolled'):
  x=df.groupby('period_id',as_index=False)[value].mean().sort_values('period_id'); x['rolling_3']=x[value].rolling(3,min_periods=1).mean(); x['pct_change']=x[value].pct_change().replace([np.inf,-np.inf],np.nan).fillna(0); return x
 def diagnostic(change,stale_rate,duplicate_rate):
- if change < -.1 and stale_rate > .15: return 'Likely reporting delay: metric drop coincides with stale submissions.'
- if change > .2 and duplicate_rate > .02: return 'Likely data-quality issue: spike coincides with duplicate increase.'
- if abs(change) > .1 and stale_rate < .05: return 'Operational signal requiring review: movement with healthy freshness.'
+ if change < -.1 and stale_rate > .15: return 'Possible reporting delay: metric drop coincides with stale submissions; requires analyst review.'
+ if change > .2 and duplicate_rate > .02: return 'Possible data-quality issue: spike coincides with duplicate increase; requires analyst review.'
+ if abs(change) > .1 and stale_rate < .05: return 'Diagnostic indicator: movement with healthy freshness; operational signal requiring review.'
  return 'No dominant diagnostic indicator; inspect contributing sites and periods.'

@@ -4,10 +4,11 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import pandas as pd
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse,HTMLResponse
+from sqlalchemy import text
 from database.schema import engine
 from analytics.methods import trend,diagnostic
 app=FastAPI(title='Nonprofit Impact Intelligence Lab API',version='1.0')
-def q(sql,params=None): return pd.read_sql_query(sql,engine,params=params)
+def q(sql,params=None): return pd.read_sql_query(text(sql),engine,params=params)
 @app.get('/health')
 def health(): return {'status':'ok','synthetic':True}
 @app.get('/summary')
@@ -19,10 +20,10 @@ def summary():
 def quality(): return q('select dimension,severity,issue_type,count(*) as issue_count from fact_data_quality_issue group by dimension,severity,issue_type order by issue_count desc').to_dict('records')
 @app.get('/lookup')
 def lookup(country=None,program_id=None):
- sql="select s.site_code,c.country_name,p.program_name,sum(e.enrolled) enrolled,round(avg(o.completion_rate),3) completion_rate,sum(sub.is_stale) stale_submissions from fact_enrollment e join dim_site s on s.site_id=e.site_id join dim_country c on c.country_code=s.country_code join dim_program p on p.program_id=s.program_id join fact_program_outcomes o on o.record_id=e.record_id join fact_data_submission sub on sub.record_id=e.record_id where 1=1"
- params=[]
- if country: sql+=' and c.country_code=?'; params.append(country)
- if program_id is not None: sql+=' and p.program_id=?'; params.append(program_id)
+ sql="select s.site_code,c.country_name,p.program_name,sum(e.enrolled) enrolled,avg(o.completion_rate) completion_rate,sum(cast(sub.is_stale as integer)) stale_submissions from fact_enrollment e join dim_site s on s.site_id=e.site_id join dim_country c on c.country_code=s.country_code join dim_program p on p.program_id=s.program_id join fact_program_outcomes o on o.record_id=e.record_id join fact_data_submission sub on sub.record_id=e.record_id where 1=1"
+ params={}
+ if country: sql+=' and c.country_code=:country'; params['country']=country
+ if program_id is not None: sql+=' and p.program_id=:program_id'; params['program_id']=program_id
  return q(sql+' group by s.site_code,c.country_name,p.program_name',params).to_dict('records')
 @app.get('/analytics')
 def analytics():

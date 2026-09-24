@@ -9,6 +9,7 @@ __pycache__/
 .streamlit/
 .DS_Store
 delivery/
+04_DELIVERABLES/
 internal/
 *.db
 *.sqlite
